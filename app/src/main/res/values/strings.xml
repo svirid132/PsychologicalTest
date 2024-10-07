@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">PsychologicalTest</string>
+    <string name="app_name">Психологические тесты</string>
+    <string name="back_button">Вернуться на предыдущий экран</string>
 </resources>

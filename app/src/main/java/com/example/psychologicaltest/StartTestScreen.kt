@@ -8,9 +8,17 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,20 +34,63 @@ import androidx.navigation.compose.rememberNavController
 import com.example.psychologicaltest.data.AbilityToEmpathizeData
 import com.example.psychologicaltest.ui.theme.PsychologicalTestTheme
 import com.example.psychologicaltest.ui.theme.PsyhoTestScreen
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.res.painterResource
+import androidx.navigation.compose.currentBackStackEntryAsState
 
 enum class PsyhoTestScreen(@StringRes val title: Int) {
     Start(title = R.string.app_name),
     AbilityToEmpathize(title = R.string.abilities_to_empatnice)
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TestPsyhoAppBar(
+    currentScreen: PsyhoTestScreen,
+    canNavigateBack: Boolean,
+    navigateUp: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    TopAppBar(
+        title = { Text(stringResource(currentScreen.title)) },
+        colors = TopAppBarDefaults.mediumTopAppBarColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        ),
+        modifier = modifier,
+        navigationIcon = {
+            if (canNavigateBack) {
+                IconButton(onClick = navigateUp) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.arrow_back),
+                        contentDescription = stringResource(R.string.back_button),
+                    )
+                }
+            }
+        }
+    )
+}
+
 @Composable
 fun PsyhoTestApp(
     navController: NavHostController = rememberNavController()
 ) {
-    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val currentScreen = PsyhoTestScreen.valueOf(
+        backStackEntry?.destination?.route ?: PsyhoTestScreen.Start.name
+    )
+    Scaffold(
+        topBar = {
+            TestPsyhoAppBar(
+                canNavigateBack = navController.previousBackStackEntry != null,
+                currentScreen = currentScreen,
+                navigateUp = { navController.navigateUp() }
+            )
+        }, modifier = Modifier.fillMaxSize()
+    ) { innerPadding ->
         NavHost(
             navController,
-            startDestination = PsyhoTestScreen.AbilityToEmpathize.name,
+            startDestination = PsyhoTestScreen.Start.name,
             Modifier.padding(innerPadding)
         ) {
             composable(route = PsyhoTestScreen.Start.name) {
@@ -56,7 +107,11 @@ fun PsyhoTestApp(
                 val context = LocalContext.current
                 PsyhoTestScreen(
                     title = stringResource(id = PsyhoTestScreen.AbilityToEmpathize.title),
-                    questions = AbilityToEmpathizeData.Questions.map { id -> context.resources.getString(id) },
+                    questions = AbilityToEmpathizeData.Questions.map { id ->
+                        context.resources.getString(
+                            id
+                        )
+                    },
                     options = AbilityToEmpathizeData.Options.map { id -> id },
                     modifier = Modifier
                         .fillMaxSize()
