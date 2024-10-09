@@ -1,5 +1,7 @@
 package com.example.psychologicaltest
 
+import android.app.AlertDialog
+import android.util.Log
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,9 +37,23 @@ import com.example.psychologicaltest.data.AbilityToEmpathizeData
 import com.example.psychologicaltest.ui.theme.PsychologicalTestTheme
 import com.example.psychologicaltest.ui.theme.PsyhoTestScreen
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.res.painterResource
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.psychologicaltest.data.PsychoTests
+import com.example.psychologicaltest.ui.PsychoTestViewModel
+import kotlinx.coroutines.flow.cancellable
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.last
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.single
+import kotlinx.coroutines.job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 enum class PsyhoTestScreen(@StringRes val title: Int) {
     Start(title = R.string.app_name),
@@ -73,12 +89,17 @@ fun TestPsyhoAppBar(
 
 @Composable
 fun PsyhoTestApp(
+    psychoTestViewModel: PsychoTestViewModel = viewModel(
+        factory = PsychoTestViewModel.Factory
+    ),
     navController: NavHostController = rememberNavController()
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentScreen = PsyhoTestScreen.valueOf(
         backStackEntry?.destination?.route ?: PsyhoTestScreen.Start.name
     )
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     Scaffold(
         topBar = {
             TestPsyhoAppBar(
@@ -104,14 +125,32 @@ fun PsyhoTestApp(
             }
             // Психологические тесты
             composable(route = PsyhoTestScreen.AbilityToEmpathize.name) {
-                val context = LocalContext.current
+                val questions = AbilityToEmpathizeData.Questions.map { id ->
+                    context.resources.getString(
+                        id
+                    )
+                }
+                val answersOrNull = psychoTestViewModel.uiStates[PsychoTests.AbilityToEmpathize]!!.collectAsState().value.answers
+                val answers = answersOrNull ?: questions.map { null }
                 PsyhoTestScreen(
                     title = stringResource(id = PsyhoTestScreen.AbilityToEmpathize.title),
-                    questions = AbilityToEmpathizeData.Questions.map { id ->
-                        context.resources.getString(
-                            id
+                    questions = questions,
+                    answers = answers,
+                    onSelectAnswer = { newAnswer, index ->
+                        val newAnswers =
+                            answers.mapIndexed { ind, answer -> if (ind == index) newAnswer else answer }
+                        psychoTestViewModel.saveTestAnswer(
+                            PsychoTests.AbilityToEmpathize,
+                            newAnswers
                         )
                     },
+                    onResetResult = {
+                        psychoTestViewModel.saveTestAnswer(
+                            PsychoTests.AbilityToEmpathize,
+                            null
+                        )
+                    },
+                    isResetTest = answersOrNull != null,
                     options = AbilityToEmpathizeData.Options.map { id -> id },
                     modifier = Modifier
                         .fillMaxSize()

@@ -50,6 +50,8 @@ android {
 }
 
 dependencies {
+    implementation("androidx.datastore:datastore-rxjava3:1.1.1")
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation(libs.androidx.material.icons.core)
     implementation(libs.androidx.foundation)
     implementation(libs.androidx.core.ktx)
