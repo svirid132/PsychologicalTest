@@ -1,7 +1,6 @@
 package com.example.psychologicaltest.ui.theme
 
 import android.app.AlertDialog
-import android.util.Log
 import androidx.annotation.StringRes
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
@@ -25,20 +24,16 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.platform.LocalConfiguration
 import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalDensity
-import com.example.psychologicaltest.data.PsychoTests
 import com.example.psychologicaltest.ui.element.BoxButton
 import com.example.psychologicaltest.ui.element.SelectedButton
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.job
 
 suspend fun scrollLiner(lazyState: LazyListState, index: Int, screenWidthPx: Float) {
     val itemInfo: LazyListItemInfo? =
@@ -82,24 +77,23 @@ fun PsyhoTestScreen(
     onCancelButton: () -> Unit = {},
     isResetTest: Boolean = false
 ) {
-    Log.d("hello", "update")
     val context = LocalContext.current
+
     val pagerState = rememberPagerState(
-        initialPage = answers.indexOfFirst { it == null },
+        initialPage = answers.indexOfFirst { it == null }.let {
+            if (it == -1) 0 else it
+        },
         pageCount = {
             questions.size
         })
     val lazyState = rememberLazyListState()
     val buttonWidth = 50.dp
-//    val stateList: SnapshotStateList<Int?> = remember {
-//        val indicesList: List<Int?> = questions.map { null }
-//        mutableStateListOf(*indicesList.toTypedArray())
-//    }
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     val screenWidthPx = with(LocalDensity.current) { screenWidth.toPx() }
     val coroutineScope = rememberCoroutineScope()
 
+    // если был swipe
     LaunchedEffect(pagerState.currentPage) {
         coroutineScope.launch {
             scrollLiner(
@@ -114,6 +108,7 @@ fun PsyhoTestScreen(
         mutableStateOf(false)
     }
 
+    // диалоговое окно reset
     LaunchedEffect(isResetTest) {
         if (isResetTest && !firstClicked) {
             val builder: AlertDialog.Builder = AlertDialog.Builder(context)
@@ -122,28 +117,22 @@ fun PsyhoTestScreen(
                 .setTitle("Пожалуйста, дозаполните тест или сбросьте его, чтобы пройти его заново.")
                 .setPositiveButton("Проходлить дальше") { dialog, which -> }
                 .setNegativeButton("Сбросить") { dialog, which ->
+                    coroutineScope.launch {
+                        delay(200L)
+                        pagerState.scrollToPage(0)
+                    }
+                    coroutineScope.launch {
+                        delay(200L)
+                        scrollLiner(
+                            lazyState = lazyState,
+                            index = 0,
+                            screenWidthPx = screenWidthPx
+                        )
+                    }
                     onResetResult()
                 }
             val dialog: AlertDialog = builder.create()
             dialog.show()
-        }
-    }
-
-    LaunchedEffect(answers) {
-        val currentPage = pagerState.currentPage
-        if (answers[currentPage] != null) {
-            coroutineScope.launch {
-                delay(200L)
-                scrollLiner(
-                    lazyState = lazyState,
-                    index = pagerState.currentPage + 1,
-                    screenWidthPx = screenWidthPx
-                )
-            }
-            coroutineScope.launch {
-                delay(200L)
-                pagerState.scrollToPage(pagerState.currentPage + 1)
-            }
         }
     }
 
@@ -163,7 +152,7 @@ fun PsyhoTestScreen(
                             coroutineScope.launch {
                                 scrollLiner(
                                     lazyState = lazyState,
-                                    index = pagerState.currentPage,
+                                    index = index,
                                     screenWidthPx = screenWidthPx
                                 )
                             }
@@ -188,8 +177,27 @@ fun PsyhoTestScreen(
                             options.forEach { id ->
                                 SelectedButton(
                                     onClick = {
-                                        onSelectAnswer(id, page)
                                         firstClicked = true
+                                        val currentPage = pagerState.currentPage
+                                        val nextCurrentPage = currentPage + 1
+                                        val preIndex =
+                                            answers.subList(nextCurrentPage, answers.size)
+                                                .indexOf(null)
+                                        val index =
+                                            if (preIndex == -1) answers.indexOf(null) else preIndex + nextCurrentPage
+                                        coroutineScope.launch {
+                                            delay(200L)
+                                            scrollLiner(
+                                                lazyState = lazyState,
+                                                index = index,
+                                                screenWidthPx = screenWidthPx
+                                            )
+                                        }
+                                        coroutineScope.launch {
+                                            delay(200L)
+                                            pagerState.scrollToPage(index)
+                                        }
+                                        onSelectAnswer(id, page)
                                     },
                                     text = context.getString(id).lowercase(),
                                     isSelected = answers[page] == id,

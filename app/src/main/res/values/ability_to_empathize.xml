@@ -92,5 +92,5 @@
     <string name="ability_to_empathize_o7">СРЕДНЕ НЕСОГЛАСЕН</string>
     <string name="ability_to_empathize_o8">СИЛЬНО НЕСОГЛАСЕН</string>
     <string name="ability_to_empathize_o9">ОЧЕНЬ СИЛЬНО НЕСОГЛАСЕН</string>
-    <string name="abilities_to_empatnice">Способности к сопереживанию</string>
+    <string name="abilities_to_empatnice_name">Способности к сопереживанию</string>
 </resources>

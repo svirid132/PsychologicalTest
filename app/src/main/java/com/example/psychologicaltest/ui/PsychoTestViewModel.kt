@@ -8,8 +8,11 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.psychologicaltest.PsychologicalTestApplication
+import com.example.psychologicaltest.data.AbilityToEmpathizeData
 import com.example.psychologicaltest.data.PsychoTestPreferencesRepository
+import com.example.psychologicaltest.data.PsychoTestToObject
 import com.example.psychologicaltest.data.PsychoTests
+import com.example.psychologicaltest.data.TestData
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -26,67 +29,77 @@ class PsychoTestViewModel(
     private val userPreferencesRepository: PsychoTestPreferencesRepository
 ) : ViewModel() {
 
-    private val _uiStates = mutableMapOf<PsychoTests, MutableStateFlow<PsychoTestUIState>>().apply {
-        enumValues<PsychoTests>().forEach {
-            put(it, MutableStateFlow(PsychoTestUIState()))
-        }
-    }.toMap()
+//    val testList: List<TestData> = listOf(AbilityToEmpathizeData)
 
-    val uiStates: Map<PsychoTests, StateFlow<PsychoTestUIState>> =
-        mutableMapOf<PsychoTests, StateFlow<PsychoTestUIState>>().apply {
-            enumValues<PsychoTests>().forEach { it ->
-                val state = userPreferencesRepository.psychoTestAnswers[it]!!.map { answerString ->
-                    val answers: List<Int?>? =
-                        answerString?.split(",")?.map { it.toIntOrNull() }
-                    PsychoTestUIState(answers = answers)
-                }
-                    .stateIn(
-                        scope = viewModelScope,
-                        started = SharingStarted.WhileSubscribed(5_000),
-                        initialValue = PsychoTestUIState()
-                    )
-                put(it, state)
-            }
-        }.toMap()
+//    private val psychoTestToData: Map<PsychoTests, TestData> = mutableMapOf<PsychoTests, TestData>().apply {
+//        put(PsychoTests.AbilityToEmpathize, AbilityToEmpathizeData)
+//        val state = userPreferencesRepository.psychoTestAnswers[PsychoTests.AbilityToEmpathize]!!.map { answerString ->
+//            val answers: List<Int?>? =
+//                answerString?.split(",")?.map { it.toIntOrNull() }
+//            PsychoTestUIState(answers = answers)
+//        }
+//            .stateIn(
+//                scope = viewModelScope,
+//                started = SharingStarted.WhileSubscribed(5_000),
+//                initialValue = null
+//            )
+//    }
 
-    init {
-        enumValues<PsychoTests>().forEach { it ->
-            uiStates[it]
-            val state = userPreferencesRepository.psychoTestAnswers[it]!!.map { answerString ->
-                val answers: List<Int?>? =
-                    answerString?.split(",")?.map { it.toIntOrNull() }
-                PsychoTestUIState(answers = answers)
-            }
-        }
-    }
-
-    fun getPsychoTestUI(test: PsychoTests): Flow<PsychoTestUIState> {
-        return userPreferencesRepository.psychoTestAnswers[test]!!.map { answerString ->
-            val answers: List<Int?>? =
-                answerString?.split(",")?.map { it.toIntOrNull() }
-            PsychoTestUIState(answers = answers)
-        }
-    }
-
-//    val modelState: StateFlow<PsychoTestUIState> =
-//        MutableStateFlow<PsychoTestUIState>(PsychoTestUIState()).apply {
-//            Log.d("answer_101", "qwerty asdf")
-//            val backendState: Flow<PsychoTestUIState> = flow {
-//                userPreferencesRepository.psychoTestAnswers[PsychoTests.AbilityToEmpathize]!!.map { answerString ->
-//                    Log.d("answer_101", answerString ?: "null")
+//    val uiStates: Map<PsychoTests, StateFlow<PsychoTestUIState?>> =
+//        mutableMapOf<PsychoTests, StateFlow<PsychoTestUIState?>>().apply {
+//            enumValues<PsychoTests>().forEach { it ->
+//                val state = userPreferencesRepository.psychoTestAnswers[it]!!.map { answerString ->
 //                    val answers: List<Int?>? =
 //                        answerString?.split(",")?.map { it.toIntOrNull() }
-//                    PsychoTestUIState(answers)
+//                    PsychoTestUIState(answers = answers)
 //                }
+//                    .stateIn(
+//                        scope = viewModelScope,
+//                        started = SharingStarted.WhileSubscribed(5_000),
+//                        initialValue = null
+//                    )
+//                put(it, state)
 //            }
-//            val state: StateFlow<PsychoTestUIState> = backendState
-//                .stateIn(
-//                    scope = viewModelScope,
-//                    started = SharingStarted.WhileSubscribed(5_000),
-//                    initialValue = PsychoTestUIState()
-//                )
-//            state
+//        }.toMap()
+
+    var uiState: StateFlow<PsychoTestUIState?> = MutableStateFlow(null)
+
+//    init {
+//        enumValues<PsychoTests>().forEach { it ->
+//            uiStates[it]
+//            val state = userPreferencesRepository.psychoTestAnswers[it]!!.map { answerString ->
+//                val answers: List<Int?>? =
+//                    answerString?.split(",")?.map { it.toIntOrNull() }
+//                PsychoTestUIState(answers = answers)
+//            }
 //        }
+//    }
+
+//    fun getPsychoTestUI(test: PsychoTests): Flow<PsychoTestUIState> {
+//        return userPreferencesRepository.psychoTestAnswers[test]!!.map { answerString ->
+//            val answers: List<Int?>? =
+//                answerString?.split(",")?.map { it.toIntOrNull() }
+//            PsychoTestUIState(answers = answers)
+//        }
+//    }
+
+    fun selectPsychoTest(test: PsychoTests?) {
+        if (test == null) {
+            uiState = MutableStateFlow(null)
+            return
+        }
+        val obj: TestData = PsychoTestToObject.getData(test)
+        uiState = userPreferencesRepository.psychoTestAnswers[test]!!.map { answerString ->
+            val answers: List<Int?>? =
+                answerString?.split(",")?.map { it.toIntOrNull() }
+            PsychoTestUIState(testData = obj, answers = answers)
+        }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = null
+            )
+    }
 
     fun saveTestAnswer(test: PsychoTests, answers: List<Int?>?) {
         val answerString: String? = answers?.joinToString(",")
@@ -106,5 +119,6 @@ class PsychoTestViewModel(
 }
 
 data class PsychoTestUIState(
-    val answers: List<Int?>? = null
+    val testData: TestData,
+    val answers: List<Int?>? = null,
 )

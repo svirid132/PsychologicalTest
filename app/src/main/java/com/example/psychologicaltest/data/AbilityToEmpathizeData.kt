@@ -1,9 +1,19 @@
 package com.example.psychologicaltest.data
 
+import androidx.lifecycle.viewModelScope
 import com.example.psychologicaltest.R
+import com.example.psychologicaltest.ui.PsychoTestUIState
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 
-object AbilityToEmpathizeData {
-    val Questions = listOf(
+object AbilityToEmpathizeData : TestData {
+    override val name = R.string.abilities_to_empatnice_name
+    override val description = R.string.abilities_to_empatnice_description
+    override val questions = listOf(
         R.string.ability_to_empathize_q1,
         R.string.ability_to_empathize_q2,
         R.string.ability_to_empathize_q3,
@@ -88,8 +98,7 @@ object AbilityToEmpathizeData {
         R.string.ability_to_empathize_q82,
         R.string.ability_to_empathize_q83
     )
-
-    val Options = listOf(
+    override val options = listOf(
         R.string.ability_to_empathize_o1,
         R.string.ability_to_empathize_o2,
         R.string.ability_to_empathize_o3,
@@ -100,14 +109,13 @@ object AbilityToEmpathizeData {
         R.string.ability_to_empathize_o8,
         R.string.ability_to_empathize_o9
     )
-
-    val Scores by lazy {
+    override val optionToScore: Map<Int, Int> = mutableMapOf<Int, Int>().apply {
         var score = 4
-        return@lazy Options.map { id ->
+        options.forEach() { id ->
             val currentScore = score
             --score
-            id to currentScore
+            put(id, currentScore)
         }
-    }
+    }.toMap()
 }
 
