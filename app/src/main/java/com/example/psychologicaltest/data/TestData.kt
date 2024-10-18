@@ -14,4 +14,5 @@ interface TestData {
     val questions: List<Int>
     val options: List<Int>
     val optionToScore: Map<Int, Int>
+    fun result(answers: List<Int>): TestResult
 }

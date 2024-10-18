@@ -71,11 +71,7 @@ fun PsyhoTestScreen(
     questions: List<String>,
     @StringRes options: List<Int>,
     @StringRes answers: List<Int?>,
-    onSelectAnswer: (answer: Int, index: Int) -> Unit = { i: Int, i1: Int -> },
-    onResetResult: () -> Unit,
-    onSendAppButton: (subject: String, summary: String) -> Unit = { s: String, s1: String -> },
-    onCancelButton: () -> Unit = {},
-    isResetTest: Boolean = false
+    onSelectAnswer: (answer: Int, index: Int) -> Unit = { i: Int, i1: Int -> }
 ) {
     val context = LocalContext.current
 
@@ -104,18 +100,15 @@ fun PsyhoTestScreen(
         }
     }
 
-    var firstClicked by remember {
-        mutableStateOf(false)
-    }
-
     // диалоговое окно reset
-    LaunchedEffect(isResetTest) {
-        if (isResetTest && !firstClicked) {
+    LaunchedEffect(Unit) {
+        val testStarted = answers.fold(false) { res, value -> res || (value != null) }
+        if (testStarted) {
             val builder: AlertDialog.Builder = AlertDialog.Builder(context)
             builder
                 .setMessage("Тест не закончен")
                 .setTitle("Пожалуйста, дозаполните тест или сбросьте его, чтобы пройти его заново.")
-                .setPositiveButton("Проходлить дальше") { dialog, which -> }
+                .setPositiveButton("Продолжить") { dialog, which -> }
                 .setNegativeButton("Сбросить") { dialog, which ->
                     coroutineScope.launch {
                         delay(200L)
@@ -129,7 +122,6 @@ fun PsyhoTestScreen(
                             screenWidthPx = screenWidthPx
                         )
                     }
-                    onResetResult()
                 }
             val dialog: AlertDialog = builder.create()
             dialog.show()
@@ -177,7 +169,6 @@ fun PsyhoTestScreen(
                             options.forEach { id ->
                                 SelectedButton(
                                     onClick = {
-                                        firstClicked = true
                                         val currentPage = pagerState.currentPage
                                         val nextCurrentPage = currentPage + 1
                                         val preIndex =
