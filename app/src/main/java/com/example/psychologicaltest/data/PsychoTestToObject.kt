@@ -10,7 +10,7 @@ object PsychoTestToObject {
     fun getData(test: PsychoTests): TestData {
         return data[test]!!
     }
-    fun getList(): List<Pair<PsychoTests, AbilityToEmpathizeData>> {
+    fun getList(): List<Pair<PsychoTests, TestData>> {
         return data.toList()
     }
 }
